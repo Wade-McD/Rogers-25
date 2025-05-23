@@ -1,5 +1,5 @@
 theory Buff_desc
-  imports "HOL-Library.Word"
+  imports "HOL-Library.Word" 
 begin
 
 (*
@@ -19,17 +19,16 @@ type_synonym message = \<open>octet list\<close>
 text \<open>An IPv6 address consists of eight groups of 16 bits.\<close>
 type_synonym ip_addr_d = "16 word \<times> 16 word \<times> 16 word \<times> 16 word \<times> 16 word \<times> 16 word \<times> 16 word \<times> 16 word"
 
-
-text \<open>we define a memory region indexed by a 64 bit word populated (potentially sparsely) by octets.\<close>
-type_synonym memregion_int = \<open>64 word\<close>
-type_synonym memregion = "memregion_int \<Rightarrow> octet option"
-
+subsection \<open>Memory regions\<close>
+text \<open>Define a memory region to be indexed by a 64 bit word populated (potentially sparsely) by octets.\<close>
+type_synonym memregion_addr = \<open>64 word\<close>
+type_synonym memregion = \<open>memregion_addr \<Rightarrow> octet option\<close>
 
 text \<open>we model a buffer as a list of octets\<close>
 type_synonym buf = "octet list"
 
 record net_buf_desc =
-  offset :: memregion_int
+  offset :: memregion_addr
   len :: \<open>16 word\<close>
 
 definition "buf_size \<equiv> 2048"
@@ -41,7 +40,7 @@ record state =
   buf_memregion :: memregion
 
 text \<open>write a buffer into a memory region at a specified location\<close>
-definition write_buf :: "memregion_int \<Rightarrow> buf \<Rightarrow> memregion \<Rightarrow> memregion"
+definition write_buf :: "memregion_addr \<Rightarrow> buf \<Rightarrow> memregion \<Rightarrow> memregion"
   where "write_buf ptr buffer region \<equiv> \<lambda> n.
           if (n \<ge> ptr \<and> (unat n) < ((unat ptr) + length buffer))
           then (Some (buffer ! (unat (n-ptr))))
@@ -56,10 +55,10 @@ definition buf_state_to_written_buf_state :: "64 word \<Rightarrow> buf \<Righta
   where "buf_state_to_written_buf_state ptr buffer \<equiv>
         \<lambda>(s::state). (s \<lparr>buf_memregion := write_buf ptr buffer (buf_memregion s)\<rparr>)"
 
-
+(*
 definition write_buf_state :: "64 word \<Rightarrow> buf \<Rightarrow> (state, unit) nondet_monad"
   where \<open>write_buf_state ptr buffer \\<open>equiv\<close> modify (buf_state_to_written_buf_state ptr buffer)\<close>
-
+*)
 
 
 end
