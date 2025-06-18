@@ -4,6 +4,7 @@ begin
 
 text \<open>Red-Black Trees with Invariants and Insertion\<close>
 
+text \<open>cmp\<close>
 (* This defines a simple enumeration type with three possible values:
    This type is used to model the result of a comparison between two values *)
 datatype cmp_val = LT | EQ | GT
@@ -57,6 +58,18 @@ text \<open>A valid red-black tree satisfies color and height invariants and has
 definition rbt :: "'a rbt \<Rightarrow> bool" where
   "rbt t \<equiv> invc t \<and> invh t \<and> get_color t = Black"
 
+(* --- TO DO --- *)
+lemma height_bound:
+  assumes "invc t" "invh t"
+  shows "height t \<le> 2 * bh t + (if get_color t = Black then 0 else 1)"
+  using assms
+proof (induction t)
+  case Leaf
+  then show ?case by simp
+next
+  oops
+qed
+
 text \<open>Balancing after insertion on the left\<close>
 fun baliL :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
   "baliL (R (R t1 a t2) b t3) c t4 = R (B t1 a t2) b (B t3 c t4)"
@@ -83,5 +96,92 @@ fun ins :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
 
 definition insert :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
   "insert x t \<equiv> paint Black (ins x t)"
+
+definition invc2 :: "'a rbt \<Rightarrow> bool" where
+  "invc2 t \<equiv> invc (paint Black t)"
+
+(* --- TO DO --- *)
+lemma invc_ins: "invc t \<Longrightarrow> invc2 (ins x t)"
+  oops
+
+(* --- TO DO --- *)
+lemma invh_ins: "invh t \<Longrightarrow> invh (ins x t)"
+  oops
+(* --- TO DO --- *)
+theorem rbt_insert: "rbt t \<Longrightarrow> rbt (insert x t)"
+  oops
+
+
+
+fun baldR :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
+  "baldR t1 a (R t2 b t3) = R t1 a (B t2 b t3)"
+| "baldR (B t1 a t2) b t3 = baliL (R t1 a t2) b t3"
+| "baldR (R t1 a (B t2 b t3)) c t4 = R (baliL (paint Red t1) a t2) b (B t3 c t4)"
+| "baldR t1 a t2 = R t1 a t2"
+
+fun baldL :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
+  "baldL (R t1 a t2) b t3 = R (B t1 a t2) b t3"
+| "baldL t1 a (B t2 b t3) = baliR t1 a (R t2 b t3)"
+| "baldL t1 a (R (B t2 b t3) c t4) = R (B t1 a t2) b (baliR t3 c (paint Red t4))"
+| "baldL t1 a t2 = R t1 a t2"
+
+(* --- TO DO --- *)
+lemma baldL_preserves:
+  assumes "invh l" "invh r" "bh l + 1 = bh r"
+      and "invc2 l" "invc r" "t' = baldL l a r"
+  shows "invh t' \<and> bh t' = bh r \<and> invc2 t' \<and> (get_color r = Black \<longrightarrow> invc t')"
+  using assms oops
+
+(* --- TO DO --- *)
+lemma baldR_preserves:
+  assumes "invh l" "invh r" "bh l = bh r + 1"
+      and "invc l" "invc2 r" "t' = baldR l a r"
+  shows "invh t' \<and> bh t' = bh l \<and> invc2 t' \<and> (get_color l = Black \<longrightarrow> invc t')"
+  using assms oops
+
+fun split_min :: "'a rbt \<Rightarrow> 'a \<times> 'a rbt" where
+  "split_min \<langle>l,(a,_),r\<rangle> =
+     (if l = \<langle>\<rangle> then (a, r)
+      else let (x, l') = split_min l in
+        (x, if get_color l = Black then baldL l' a r else R l' a r))"
+
+(* --- TO DO --- *)
+lemma split_min_preserves:
+  assumes "split_min t = (x, t')" "t \<noteq> \<langle>\<rangle>" "invh t" "invc t"
+  shows "invh t' \<and> 
+         (get_color t = Red \<longrightarrow> bh t' = bh t \<and> invc t') \<and>
+         (get_color t = Black \<longrightarrow> bh t' = bh t - 1 \<and> invc2 t')"
+  using assms
+  oops
+
+
+
+fun del :: "'a :: linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
+  "del _ \<langle>\<rangle> = \<langle>\<rangle>"
+| "del x \<langle>l,(a,_),r\<rangle> = (case cmp x a of
+    LT \<Rightarrow> let l' = del x l
+          in if l \<noteq> \<langle>\<rangle> \<and> get_color l = Black then baldL l' a r else R l' a r
+  | EQ \<Rightarrow> if r = \<langle>\<rangle> then l 
+          else let (a',r') = split_min r
+               in if get_color r = Black then baldR l a' r' else R l a' r'  
+  | GT \<Rightarrow> let r' = del x r 
+          in if r \<noteq> \<langle>\<rangle> \<and> get_color r = Black then baldR l a r' else R l a r')"
+
+(* --- TO DO --- *)
+lemma del_preserves:
+  assumes "invh t" "invc t" "t' = del x t"
+  shows "invh t' \<and> 
+         (get_color t = Red \<longrightarrow> bh t' = bh t \<and> invc t') \<and>
+         (get_color t = Black \<longrightarrow> bh t' = bh t - 1 \<and> invc2 t')"
+  using assms
+  oops
+
+
+definition delete :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
+  "delete x t \<equiv> paint Black (del x t)"
+
+(* --- TO DO --- *)
+lemma rbt_delete : "rbt t \<Longrightarrow> rbt (delete x t)"
+  oops
 
 end
