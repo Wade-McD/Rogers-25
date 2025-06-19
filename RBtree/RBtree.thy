@@ -62,12 +62,6 @@ text \<open>Definition of a valid red-black tree\<close>
 definition rbt :: "'a rbt \<Rightarrow> bool" where
   "rbt t \<equiv> invc t \<and> invh t \<and> get_color t = Black"
 
-(* --- TO DO --- *)
-text \<open>Bound the overall height in terms of black height\<close>
-lemma height_bound:
-  assumes "invc t" "invh t"
-  shows "height t \<le> 2 * bh t + (if get_color t = Black then 0 else 1)"
-  using assms oops
 
 text \<open>Balancing after inserting in the left subtree\<close>
 fun baliL :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
@@ -98,23 +92,8 @@ definition insert :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" wh
   "insert x t \<equiv> paint Black (ins x t)"
 
 text \<open>Weakened color invariant: used to model temporary violations after insert/del\<close>
-definition invc2 :: "'a rbt \<Rightarrow> bool" where
+abbreviation invc2 :: "'a rbt \<Rightarrow> bool" where
   "invc2 t \<equiv> invc (paint Black t)"
-
-(* --- TO DO --- *)
-text \<open>Insertion preserves the color invariant (weakened)\<close>
-lemma invc_ins: "invc t \<Longrightarrow> invc2 (ins x t)"
-  oops
-
-(* --- TO DO --- *)
-text \<open>Insertion preserves the height invariant\<close>
-lemma invh_ins: "invh t \<Longrightarrow> invh (ins x t)"
-  oops
-
-(* --- TO DO --- *)
-text \<open>Insertion preserves red-black tree validity\<close>
-theorem rbt_insert: "rbt t \<Longrightarrow> rbt (insert x t)"
-  oops
 
 text \<open>Balancing after deletion from right subtree\<close>
 fun baldR :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
@@ -130,22 +109,7 @@ fun baldL :: "'a rbt \<Rightarrow> 'a \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt"
 | "baldL t1 a (R (B t2 b t3) c t4) = R (B t1 a t2) b (baliR t3 c (paint Red t4))"
 | "baldL t1 a t2 = R t1 a t2"
 
-(* --- TO DO --- *)
-text \<open>baldL preserves invariants\<close>
-lemma baldL_preserves:
-  assumes "invh l" "invh r" "bh l + 1 = bh r"
-      and "invc2 l" "invc r" "t' = baldL l a r"
-  shows "invh t' \<and> bh t' = bh r \<and> invc2 t' \<and> (get_color r = Black \<longrightarrow> invc t')"
-  using assms oops
-
-(* --- TO DO --- *)
-text \<open>baldR preserves invariants\<close>
-lemma baldR_preserves:
-  assumes "invh l" "invh r" "bh l = bh r + 1"
-      and "invc l" "invc2 r" "t' = baldR l a r"
-  shows "invh t' \<and> bh t' = bh l \<and> invc2 t' \<and> (get_color l = Black \<longrightarrow> invc t')"
-  using assms oops
-
+(*
 text \<open>Find and remove the minimum element in the tree\<close>
 fun split_min :: "'a rbt \<Rightarrow> 'a \<times> 'a rbt" where
  "split_min \<langle>l,(a,_),r\<rangle> =
@@ -174,25 +138,7 @@ fun del :: "'a :: linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
                in if get_color r = Black then baldR l a' r' else R l a' r'  
   | GT \<Rightarrow> let r' = del x r 
           in if r \<noteq> \<langle>\<rangle> \<and> get_color r = Black then baldR l a r' else R l a r')"
-
-(* --- TO DO --- *)
-text \<open>deletion preserves red-black invariants (weakened)\<close>
-lemma del_preserves:
-  assumes "invh t" "invc t" "t' = del x t"
-  shows "invh t' \<and> 
-         (get_color t = Red \<longrightarrow> bh t' = bh t \<and> invc t') \<and>
-         (get_color t = Black \<longrightarrow> bh t' = bh t - 1 \<and> invc2 t')"
-  using assms
-  oops
-
-text \<open>Top-level delete: call del and blacken the root\<close>
-definition delete :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
-  "delete x t \<equiv> paint Black (del x t)"
-
-(* --- TO DO --- *)
-text \<open>delete preserves red-black tree validity\<close>
-lemma rbt_delete : "rbt t \<Longrightarrow> rbt (delete x t)"
-  oops
+*)
 
 text \<open>Join two red-black trees with equal black height\<close>
 fun join :: "'a rbt \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
@@ -219,15 +165,8 @@ fun del_join :: "'a :: linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
   | EQ \<Rightarrow> join l r  
   | GT \<Rightarrow> if r \<noteq> \<langle>\<rangle> \<and> get_color r = Black then baldR l a (del_join x r) else R l a (del_join x r))"
 
-(* --- TO DO --- *)
-text \<open>join preserves red-black invariants\<close>
-lemma join_invariants:
-  assumes "invh l" "invh r" "bh l = bh r"
-      and "invc l" "invc r"
-      and "t' = join l r"
-  shows "invh t' \<and> bh t' = bh l \<and> invc2 t' \<and> (get_color l = Black \<and> get_color r = Black \<longrightarrow> invc t')"
-  oops
-
-
+text \<open>Top-level delete: call del and blacken the root\<close>
+definition delete :: "'a::linorder \<Rightarrow> 'a rbt \<Rightarrow> 'a rbt" where
+  "delete x t \<equiv> paint Black (del_join x t)"
 
 end
